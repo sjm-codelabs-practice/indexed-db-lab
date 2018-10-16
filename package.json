@@ -1,0 +1,25 @@
+{
+  "name": "indexed-db-lab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sjm-codelabs-practice/indexed-db-lab.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sjm-codelabs-practice/indexed-db-lab/issues"
+  },
+  "homepage": "https://github.com/sjm-codelabs-practice/indexed-db-lab#readme",
+  "devDependencies": {
+    "http-server": "^0.11.1"
+  }
+}
