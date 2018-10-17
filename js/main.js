@@ -130,7 +130,12 @@ var idbApp = (function() {
 
   function getByName(key) {
 
-    // TODO 4.3 - use the get method to get an object by name
+    return dbPromise.then(function (db) {
+      var tx = db.transaction('products', 'readonly');
+      var store = tx.objectStore('products');
+      var index = store.index('name');
+      return index.get(key);
+    });
 
   }
 
@@ -155,7 +160,39 @@ var idbApp = (function() {
 
   function getByPrice() {
 
-    // TODO 4.4a - use a cursor to get objects by price
+    var lower = document.getElementById('priceLower').value;
+    var upper = document.getElementById('priceUpper').value;
+    var lowerNum = Number(document.getElementById('priceLower').value);
+    var upperNum = Number(document.getElementById('priceUpper').value);
+
+    if (lower === '' && upper === '') { return; }
+    var range;
+    if (lower !== '' && upper !== '') {
+      range = IDBKeyRange.bound(lowerNum, upperNum);
+    } else if (lower === '') {
+      range = IDBKeyRange.upperBound(upperNum);
+    } else {
+      range = IDBKeyRange.lowerBound(lowerNum);
+    }
+    var s = '';
+    dbPromise.then(function (db) {
+      var tx = db.transaction('products', 'readonly');
+      var store = tx.objectStore('products');
+      var index = store.index('price');
+      return index.openCursor(range);
+    }).then(function showRange(cursor) {
+      if (!cursor) { return; }
+      console.log('Cursored at:', cursor.value.name);
+      s += '<h2>Price - ' + cursor.value.price + '</h2><p>';
+      for (var field in cursor.value) {
+        s += field + '=' + cursor.value[field] + '<br/>';
+      }
+      s += '</p>';
+      return cursor.continue().then(showRange);
+    }).then(function () {
+      if (s === '') { s = '<p>No results.</p>'; }
+      document.getElementById('results').innerHTML = s;
+    });
 
   }
 
@@ -165,9 +202,19 @@ var idbApp = (function() {
     var range = IDBKeyRange.only(key);
     var s = '';
     dbPromise.then(function(db) {
-
-      // TODO 4.4b - get items by their description
-
+      var tx = db.transaction('products', 'readonly');
+      var store = tx.objectStore('products');
+      var index = store.index('description');
+      return index.openCursor(range);
+    }).then(function showRange(cursor) {
+      if (!cursor) { return; }
+      console.log('Cursored at:', cursor.value.name);
+      s += '<h2>Description - ' + cursor.value.description + '</h2><p>';
+      for (var field in cursor.value) {
+        s += field + '=' + cursor.value[field] + '<br/>';
+      }
+      s += '</p>';
+      return cursor.continue().then(showRange);
     }).then(function() {
       if (s === '') {s = '<p>No results.</p>';}
       document.getElementById('results').innerHTML = s;
