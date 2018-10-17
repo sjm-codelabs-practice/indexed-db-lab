@@ -8,9 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . --ext .js,.jsx",
     "start": "node server.js",
-    "http-server": "http-server -p 8080 -a localhost -c 0"
+    "http-server": "http-server -p 3000 -a localhost -c 0"
   },
   "repository": {
     "type": "git",
@@ -23,14 +22,6 @@
   },
   "homepage": "https://github.com/sjm-codelabs-practice/indexed-db-lab#readme",
   "devDependencies": {
-    "eslint": "^5.7.0",
-    "eslint-config-airbnb": "^17.1.0",
-    "eslint-config-prettier": "^3.1.0",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-jsx-a11y": "^6.1.2",
-    "eslint-plugin-prettier": "^3.0.0",
-    "eslint-plugin-react": "^7.11.1",
-    "http-server": "^0.11.1",
-    "prettier": "^1.14.3"
+    "http-server": "^0.11.1"
   }
 }
