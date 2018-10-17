@@ -21,7 +21,7 @@ var idbApp = (function() {
     return;
   }
 
-  var dbPromise = idb.open('couches-n-things', 5, function (upgradeDb) {
+  var dbPromise = idb.open('couches-n-things', 7, function (upgradeDb) {
     switch (upgradeDb.oldVersion) {
       case 0:
       // a placeholder case so that the switch block will
@@ -46,15 +46,19 @@ var idbApp = (function() {
         var store = upgradeDb.transaction.objectStore('products');
         store.createIndex('description', 'description');
 
-      // TODO 4.2 - create 'price' and 'description' indexes
+      case 5:
+        console.log('Creating the orders object store');
+        upgradeDb.createObjectStore('orders', { keyPath: 'id' });
 
-      // TODO 5.1 - create an 'orders' object store
+      case 6:
+        console.log('Creating a name index, for orders');
+        var store = upgradeDb.transaction.objectStore('orders');
+        store.createIndex('name', 'name');
 
     }
   });
 
   function addProducts() {
-
     dbPromise.then(function (db) {
       var tx = db.transaction('products', 'readwrite');
       var store = tx.objectStore('products');
@@ -125,18 +129,15 @@ var idbApp = (function() {
         console.log('All items added successfully!');
       });
     });
-
   }
 
   function getByName(key) {
-
     return dbPromise.then(function (db) {
       var tx = db.transaction('products', 'readonly');
       var store = tx.objectStore('products');
       var index = store.index('name');
       return index.get(key);
     });
-
   }
 
   function displayByName() {
@@ -159,7 +160,6 @@ var idbApp = (function() {
   }
 
   function getByPrice() {
-
     var lower = document.getElementById('priceLower').value;
     var upper = document.getElementById('priceUpper').value;
     var lowerNum = Number(document.getElementById('priceLower').value);
@@ -193,7 +193,6 @@ var idbApp = (function() {
       if (s === '') { s = '<p>No results.</p>'; }
       document.getElementById('results').innerHTML = s;
     });
-
   }
 
   function getByDesc() {
@@ -222,17 +221,68 @@ var idbApp = (function() {
   }
 
   function addOrders() {
+    dbPromise.then(function (db) {
+      var tx = db.transaction('orders', 'readwrite');
+      var store = tx.objectStore('orders');
+      var items = [
+        {
+          name: 'Cabinet',
+          id: 'ca-brn-ma',
+          price: 799.99,
+          color: 'brown',
+          material: 'mahogany',
+          description: 'An intricately-designed, antique cabinet',
+          quantity: 7
+        },
+        {
+          name: 'Armchair',
+          id: 'ac-gr-pin',
+          price: 299.99,
+          color: 'grey',
+          material: 'pine',
+          description: 'A plush recliner armchair',
+          quantity: 3
+        },
+        {
+          name: 'Couch',
+          id: 'cch-blk-ma',
+          price: 499.99,
+          color: 'black',
+          material: 'mahogany',
+          description: 'A very comfy couch',
+          quantity: 3
+        }
+      ];
 
-    // TODO 5.2 - add items to the 'orders' object store
-
+      return Promise.all(items.map(function (item) {
+        console.log('Adding item: ', item);
+        return store.add(item);
+      })
+      ).catch(function (e) {
+        tx.abort();
+        console.log(e);
+      }).then(function () {
+        console.log('All items added successfully!');
+      });
+    });
   }
 
   function showOrders() {
     var s = '';
     dbPromise.then(function(db) {
-
-      // TODO 5.3 - use a cursor to display the orders on the page
-
+      var tx = db.transaction('orders', 'readonly');
+      var store = tx.objectStore('orders');
+      var index = store.index('name');
+      return index.openCursor();
+    }).then(function showRange(cursor) {
+      if (!cursor) { return; }
+      console.log('Cursored at:', cursor.value.name);
+      s += '<h2>Name - ' + cursor.value.name + '</h2><p>';
+      for (var field in cursor.value) {
+        s += field + '=' + cursor.value[field] + '<br/>';
+      }
+      s += '</p>';
+      return cursor.continue().then(showRange);
     }).then(function() {
       if (s === '') {s = '<p>No results.</p>';}
       document.getElementById('orders').innerHTML = s;
@@ -240,13 +290,18 @@ var idbApp = (function() {
   }
 
   function getOrders() {
-
-    // TODO 5.4 - get all objects from 'orders' object store
-
+    return dbPromise.then(function (db) {
+      var tx = db.transaction('orders', 'readonly');
+      var store = tx.objectStore('orders');
+      var orders = store.getAll();
+      return orders;
+    });
   }
 
   function fulfillOrders() {
     getOrders().then(function(orders) {
+      console.log("received orders:", orders);
+
       return processOrders(orders);
     }).then(function(updatedProducts) {
       updateProductsStore(updatedProducts);
@@ -254,15 +309,32 @@ var idbApp = (function() {
   }
 
   function processOrders(orders) {
-
-    // TODO 5.5 - get items in the 'products' store matching the orders
-
+    return dbPromise.then(function (db) {
+      var tx = db.transaction('products');
+      var store = tx.objectStore('products');
+      return Promise.all(
+        orders.map(function (order) {
+          return store.get(order.id).then(function (product) {
+            return decrementQuantity(product, order);
+          });
+        })
+      );
+    });
   }
 
   function decrementQuantity(product, order) {
-
-    // TODO 5.6 - check the quantity of remaining products
-
+    return new Promise(function (resolve, reject) {
+      var item = product;
+      var qtyRemaining = item.quantity - order.quantity;
+      if (qtyRemaining < 0) {
+        console.log('Not enough ' + product.id + ' left in stock!');
+        document.getElementById('receipt').innerHTML =
+          '<h3>Not enough ' + product.id + ' left in stock!</h3>';
+        throw 'Out of stock!';
+      }
+      item.quantity = qtyRemaining;
+      resolve(item);
+    });
   }
 
   function updateProductsStore(products) {
