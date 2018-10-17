@@ -339,13 +339,20 @@ var idbApp = (function() {
 
   function updateProductsStore(products) {
     dbPromise.then(function(db) {
+      var tx = db.transaction('products', 'readwrite');
+      var store = tx.objectStore('products');
 
-      // TODO 5.7 - update the items in the 'products' object store
-
-    }).then(function() {
-      console.log('Orders processed successfully!');
-      document.getElementById('receipt').innerHTML =
-      '<h3>Order processed successfully!</h3>';
+      return Promise.all(products.map(function (product) {
+          return store.put(product);
+        })
+      ).catch(function(e) {
+        tx.abort();
+        console.log(e);
+      }).then(function() {
+        console.log('Orders processed successfully!');
+        document.getElementById('receipt').innerHTML =
+        '<h3>Order processed successfully!</h3>';
+      });
     });
   }
 
